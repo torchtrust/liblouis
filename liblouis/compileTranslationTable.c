@@ -289,6 +289,7 @@ static const char *opcodeNames[CTO_None] = {
   "letter",
   "uppercase",
   "lowercase",
+  "grouping",
   "uplow",
   "litdigit",
   "display",
@@ -1736,41 +1737,41 @@ includeFile (FileInfo * nested, CharsString * includedFile)
   return compileFile (includeThis);
 }
 
-struct SwapName
+struct RuleName
 {
-  struct SwapName *next;
+  struct RuleName *next;
   TranslationTableOffset ruleOffset;
   widechar length;
   widechar name[1];
 };
-static struct SwapName *swapNames = NULL;
+static struct RuleName *ruleNames = NULL;
 static TranslationTableOffset
-findSwapName (const CharsString * name)
+findRuleName (const CharsString * name)
 {
-  const struct SwapName *nameSwap = swapNames;
-  while (nameSwap)
+  const struct RuleName *nameRule = ruleNames;
+  while (nameRule)
     {
-      if ((name->length == nameSwap->length) &&
-	  (memcmp (&name->chars[0], nameSwap->name, CHARSIZE *
+      if ((name->length == nameRule->length) &&
+	  (memcmp (&name->chars[0], nameRule->name, CHARSIZE *
 		   name->length) == 0))
-	return nameSwap->ruleOffset;
-      nameSwap = nameSwap->next;
+	return nameRule->ruleOffset;
+      nameRule = nameRule->next;
     }
   return 0;
 }
 
 static int
-addSwapName (FileInfo * nested, CharsString * name)
+addRuleName (FileInfo * nested, CharsString * name)
 {
   int k;
-  struct SwapName *nameSwap;
-  if (!(nameSwap = malloc (sizeof (*nameSwap) + CHARSIZE *
+  struct RuleName *nameRule;
+  if (!(nameRule = malloc (sizeof (*nameRule) + CHARSIZE *
 			   (name->length - 1))))
     {
       compileError (nested, "not enough memory");
       return 0;
     }
-  memset (nameSwap, 0, sizeof (*nameSwap));
+  memset (nameRule, 0, sizeof (*nameRule));
   for (k = 0; k < name->length; k++)
     {
       TranslationTableCharacter *ch = definedCharOrDots
@@ -1781,24 +1782,24 @@ addSwapName (FileInfo * nested, CharsString * name)
 	  compileError (nested, "a name may contain only letters");
 	  return 0;
 	}
-      nameSwap->name[k] = name->chars[k];
+      nameRule->name[k] = name->chars[k];
     }
-  nameSwap->length = name->length;
-  nameSwap->ruleOffset = newRuleOffset;
-  nameSwap->next = swapNames;
-  swapNames = nameSwap;
+  nameRule->length = name->length;
+  nameRule->ruleOffset = newRuleOffset;
+  nameRule->next = ruleNames;
+  ruleNames = nameRule;
   return 1;
 }
 
 static void
-deallocateSwapNames (void)
+deallocateRuleNames (void)
 {
-  while (swapNames)
+  while (ruleNames)
     {
-      struct SwapName *nameSwap = swapNames;
-      swapNames = swapNames->next;
-      if (nameSwap)
-	free (nameSwap);
+      struct RuleName *nameRule = ruleNames;
+      ruleNames = ruleNames->next;
+      if (nameRule)
+	free (nameRule);
     }
 }
 
@@ -1841,7 +1842,7 @@ compileSwap (FileInfo * nested, TranslationTableOpcode opcode)
     return 0;
   if (!getToken (nested, &matches, "matches operand"))
     return 0;
-  if (!getToken (nested, &replacements, "replaces operand"))
+  if (!getToken (nested, &replacements, "replacements operand"))
     return 0;
   if (opcode == CTO_SwapCc || opcode == CTO_SwapCd)
     {
@@ -1865,7 +1866,7 @@ compileSwap (FileInfo * nested, TranslationTableOpcode opcode)
     }
   if (!addRule (nested, opcode, &ruleChars, &ruleDots, 0, 0))
     return 0;
-  if (!addSwapName (nested, &name))
+  if (!addRuleName (nested, &name))
     return 0;
   return 1;
 }
@@ -2147,7 +2148,7 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 	    attributes = class->attribute;
 	    goto insertAttributes;
 	  }
-	if ((swapRuleOffset = findSwapName (&holdString)))
+	if ((swapRuleOffset = findRuleName (&holdString)))
 	  {
 	    passInstructions[passIC++] = pass_swap;
 	    passInstructions[passIC++] = swapRuleOffset >> 16;
@@ -2236,7 +2237,7 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 						       0))->
 				   attributes & (CTC_Letter | CTC_Digit)))
 	  holdString.chars[holdString.length++] = action.chars[k++];
-	if ((swapRuleOffset = findSwapName (&holdString)))
+	if ((swapRuleOffset = findRuleName (&holdString)))
 	  {
 	    passInstructions[passIC++] = pass_swap;
 	    passInstructions[passIC++] = swapRuleOffset >> 16;
@@ -3518,7 +3519,7 @@ compileTranslationTable (const char *tableList)
   fileCount = 0;
   table = NULL;
   characterClasses = NULL;
-  swapNames = NULL;
+  ruleNames = NULL;
   if (tableList == NULL)
     return NULL;
   if (*tableList == 0)
@@ -3572,8 +3573,8 @@ compileTranslationTable (const char *tableList)
 cleanup:
   if (characterClasses)
     deallocateCharacterClasses ();
-  if (swapNames)
-    deallocateSwapNames ();
+  if (ruleNames)
+    deallocateRuleNames ();
   if (!errorCount)
     {
       setDefaults ();
