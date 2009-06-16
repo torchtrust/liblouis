@@ -114,6 +114,8 @@ extern "C"
     pass_class3 = 'y',
     pass_class4 = 'z',
     pass_attributes = '$',
+    pass_groupstart = '{',
+    pass_groupend = '}',
     pass_swap = '%',
     pass_hyphen = '-',
     pass_until = '.',

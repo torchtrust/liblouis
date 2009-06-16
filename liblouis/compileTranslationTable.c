@@ -2005,10 +2005,12 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
   TranslationTableCharacterAttributes before = 0;
   CharsString test;
   CharsString action;
+  widechar passSubOp;
   int returned;
   CharsString holdString;
   const struct CharacterClass *class;
-  TranslationTableOffset swapRuleOffset;
+  TranslationTableOffset ruleOffset;
+  TranslationTableRule *rule;
   TranslationTableCharacterAttributes attributes = 0;
   widechar *passInstructions = ruleDots.chars;
   int passIC = 0;		/*Instruction counter */
@@ -2023,7 +2025,7 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 /*Compile test part*/
   ruleChars.length = 0;
   while (k < test.length)
-    switch (test.chars[k])
+    switch ((passSubOp = test.chars[k]))
       {
       case pass_lookback:
 	passInstructions[passIC++] = pass_lookback;
@@ -2137,6 +2139,26 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 	  }
 	passInstructions[passIC++] = holdNumber;
 	break;
+      case pass_groupstart:
+      case pass_groupend:
+	k++;
+	holdString.length = 0;
+	while (((definedCharOrDots (nested, test.chars[k],
+				    0))->attributes & CTC_Letter))
+	  holdString.chars[holdString.length++] = test.chars[k++];
+	ruleOffset = findRuleName (&holdString);
+	if (ruleOffset)
+	  rule = (TranslationTableRule *) & table->ruleArea[ruleOffset];
+	if (rule && rule->opcode == CTO_Grouping)
+	  {
+	    passInstructions[passIC++] = passSubOp;
+	    passInstructions[passIC++] = ruleOffset >> 16;
+	    passInstructions[passIC++] = ruleOffset & 0xffff;
+	    break;
+	  }
+	compileError (nested, "%s is not a grouping name",
+		      showString (&holdString.chars[0], holdString.length));
+	return 0;
       case pass_swap:
 	k++;
 	holdString.length = 0;
@@ -2148,17 +2170,21 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 	    attributes = class->attribute;
 	    goto insertAttributes;
 	  }
-	if ((swapRuleOffset = findRuleName (&holdString)))
+	ruleOffset = findRuleName (&holdString);
+	if (ruleOffset)
+	  rule = (TranslationTableRule *) & table->ruleArea[ruleOffset];
+	if (rule
+	    && (rule->opcode == CTO_SwapCc || rule->opcode == CTO_SwapCd
+		|| rule->opcode == CTO_SwapDd))
 	  {
 	    passInstructions[passIC++] = pass_swap;
-	    passInstructions[passIC++] = swapRuleOffset >> 16;
-	    passInstructions[passIC++] = swapRuleOffset & 0xffff;
+	    passInstructions[passIC++] = ruleOffset >> 16;
+	    passInstructions[passIC++] = ruleOffset & 0xffff;
 	    goto getRange;
 	  }
 	compileError (nested, "%s is neither a class name nor a swap name.",
 		      showString (&holdString.chars[0], holdString.length));
 	return 0;
-	break;
       default:
 	compileError (nested, "incorrect operator '%c' in test part",
 		      test.chars[k]);
@@ -2169,7 +2195,7 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 /*Compile action part*/
   k = 0;
   while (k < action.length)
-    switch (action.chars[k])
+    switch ((passSubOp = action.chars[k]))
       {
       case pass_string:
 	if (opcode != CTO_Correct)
@@ -2229,6 +2255,26 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 	passInstructions[passIC++] = pass_omit;
 	k++;
 	break;
+      case pass_groupstart:
+      case pass_groupend:
+	k++;
+	holdString.length = 0;
+	while (((definedCharOrDots (nested, action.chars[k],
+				    0))->attributes & CTC_Letter))
+	  holdString.chars[holdString.length++] = action.chars[k++];
+	ruleOffset = findRuleName (&holdString);
+	if (ruleOffset)
+	  rule = (TranslationTableRule *) & table->ruleArea[ruleOffset];
+	if (rule && rule->opcode == CTO_Grouping)
+	  {
+	    passInstructions[passIC++] = passSubOp;
+	    passInstructions[passIC++] = ruleOffset >> 16;
+	    passInstructions[passIC++] = ruleOffset & 0xffff;
+	    break;
+	  }
+	compileError (nested, "%s is not a grouping name",
+		      showString (&holdString.chars[0], holdString.length));
+	return 0;
       case pass_swap:
 	k++;
 	holdString.length = 0;
@@ -2237,11 +2283,16 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 						       0))->
 				   attributes & (CTC_Letter | CTC_Digit)))
 	  holdString.chars[holdString.length++] = action.chars[k++];
-	if ((swapRuleOffset = findRuleName (&holdString)))
+	ruleOffset = findRuleName (&holdString);
+	if (ruleOffset)
+	  rule = (TranslationTableRule *) & table->ruleArea[ruleOffset];
+	if (rule
+	    && (rule->opcode == CTO_SwapCc || rule->opcode == CTO_SwapCd
+		|| rule->opcode == CTO_SwapDd))
 	  {
 	    passInstructions[passIC++] = pass_swap;
-	    passInstructions[passIC++] = swapRuleOffset >> 16;
-	    passInstructions[passIC++] = swapRuleOffset & 0xffff;
+	    passInstructions[passIC++] = ruleOffset >> 16;
+	    passInstructions[passIC++] = ruleOffset & 0xffff;
 	    break;
 	  }
 	compileError (nested, "%s is not a swap name.",
@@ -2263,6 +2314,8 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 	case pass_string:
 	case pass_dots:
 	case pass_attributes:
+	case pass_groupstart:
+	case pass_groupend:
 	case pass_swap:
 	  start = 1;
 	  break;
@@ -2368,8 +2421,7 @@ compileGrouping (FileInfo * nested)
   if (groupChars.length != 2 || dotsParsed.length != 2)
     {
       compileError (nested,
-"two Unicode characters and two cells separated by a comma are needed."
-);
+		    "two Unicode characters and two cells separated by a comma are needed.");
       return 0;
     }
   charsDotsPtr = addCharOrDots (nested, groupChars.chars[0], 0);
@@ -3417,9 +3469,9 @@ doOpcode:
     case CTO_NoBreak:
       ok = compileNoBreak (nested);
       break;
-case CTO_Grouping:
-ok = compileGrouping (nested);
-break;
+    case CTO_Grouping:
+      ok = compileGrouping (nested);
+      break;
     case CTO_UpLow:
       ok = compileUplow (nested);
       break;
