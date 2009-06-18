@@ -697,7 +697,7 @@ allocateHeader (FileInfo * nested)
   tableUsed = sizeof (*table) + OFFSETSIZE;	/*So no offset is ever zero */
   if (!(table = malloc (startSize)))
     {
-      compileError (nested, "translation table header not allocated.");
+      compileError (nested, "Not enough merory");
       if (table != NULL)
 	free (table);
       table = NULL;
@@ -3550,17 +3550,14 @@ compileFile (const char *fileName)
   nested.lineNumber = 0;
   if ((nested.in = fopen (completePath, "r")))
     {
-      if (allocateHeader (&nested))
-	{
 	  while (getALine (&nested))
 	    compileRule (&nested);
 	  fclose (nested.in);
-	}
     }
   else
     {
       if (fileCount > 1)
-	lou_logPrint ("Cannot open translation table '%s'", nested.fileName);
+	lou_logPrint ("Cannot open table '%s'", nested.fileName);
       errorCount++;
       return 0;
     }
@@ -3623,6 +3620,7 @@ compileTranslationTable (const char *tableList)
 {
 /*compile source tables into a table in memory */
   int k;
+  TranslationTableCharacter *zero;
   char mainTable[MAXSTRING];
   char subTable[MAXSTRING];
   int listLength;
@@ -3632,9 +3630,7 @@ compileTranslationTable (const char *tableList)
   table = NULL;
   characterClasses = NULL;
   ruleNames = NULL;
-  if (tableList == NULL)
-    return NULL;
-  if (*tableList == 0)
+  if (tableList == NULL || *tableList == 0)
     return NULL;
   if (!opcodeLengths[0])
     {
@@ -3642,6 +3638,9 @@ compileTranslationTable (const char *tableList)
       for (opcode = 0; opcode < CTO_None; opcode++)
 	opcodeLengths[opcode] = strlen (opcodeNames[opcode]);
     }
+  allocateHeader (NULL);
+  zero = addCharOrDots (NULL, 0, 0);
+  zero->attributes = CTC_Space;
   listLength = strlen (tableList);
   for (k = currentListPos; k < listLength; k++)
     if (tableList[k] == ',')
