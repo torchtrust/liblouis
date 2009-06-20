@@ -2282,6 +2282,10 @@ for_passDoTest (void)
 	      }
 	  passIC += 5;
 	  break;
+case pass_groupstart:
+break;
+case pass_groupend:
+break;
 	case pass_swap:
 	  itsTrue = for_swapTest ();
 	  passIC += 5;
@@ -2377,6 +2381,10 @@ for_passDoAction (void)
 	passVariables[passInstructions[passIC + 1]]++;
 	passIC += 2;
 	break;
+case pass_groupstart:
+break;
+case pass_groupend:
+break;
       case pass_swap:
 	if (!for_swapReplace (startReplace, endReplace))
 	  return 0;
