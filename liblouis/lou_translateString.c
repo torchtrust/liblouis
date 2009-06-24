@@ -2215,13 +2215,66 @@ for_swapReplace (int start, int end)
   return 1;
 }
 
+static TranslationTableRule *bracketRule;
+static widechar bracketOp;
+
+static int
+doBrackets (void)
+{
+  widechar startDots = bracketRule->charsdots[2];
+  widechar endDots = bracketRule->charsdots[3];
+  widechar *curin  = currentInput;
+  int curPos;
+  int level = 0;
+  if (bracketOp == pass_groupstart)
+    {
+      for (curPos = startReplace + 1; curPos < srcmax; curPos++)
+	{
+	  if (currentInput[curPos] == startDots)
+	    level--;
+	  if (currentInput[curPos] == endDots)
+	    level++;
+	  if (level == 1)
+	    break;
+	}
+      if (curPos == srcmax)
+	return 0;
+      curPos++;
+      for (; curPos < srcmax; curPos++)
+	curin[curPos - 1] = curin[curPos];
+      srcmax--;
+    }
+  else
+    {
+      for (curPos = dest - 1; curPos >= 0; curPos++)
+	{
+	  if (currentOutput[curPos] == endDots)
+	    level--;
+	  if (currentOutput[curPos] == startDots)
+	    level++;
+	  if (level == 1)
+	    break;
+	}
+      if (curPos < 0)
+	return 0;
+      curPos++;
+      for (; curPos > dest; curPos++)
+	currentOutput[curPos - 1] = currentOutput[curPos];
+      dest--;
+    }
+  return 1;
+}
+
 static int
 for_passDoTest (void)
 {
   int k;
   int m;
   int not = 0;
+  TranslationTableOffset ruleOffset;
+  TranslationTableRule *rule;
   TranslationTableCharacterAttributes attributes;
+  bracketRule = NULL;
   passSrc = src;
   passInstructions = &transRule->charsdots[transCharslen];
   passIC = 0;
@@ -2282,10 +2335,23 @@ for_passDoTest (void)
 	      }
 	  passIC += 5;
 	  break;
-case pass_groupstart:
-break;
-case pass_groupend:
-break;
+	case pass_groupstart:
+	case pass_groupend:
+	  ruleOffset = (passInstructions[passIC + 1] << 16) |
+	    passInstructions[passIC + 2];
+	  rule = (TranslationTableRule *) & table->ruleArea[ruleOffset];
+	  if (passIC == 0 || (passIC > 0 && passInstructions[passIC - 1] ==
+			      pass_startReplace))
+	    {
+	      bracketRule = rule;
+	      bracketOp = passInstructions[passIC];
+	    }
+	  if (passInstructions[passIC] == pass_groupstart)
+	    itsTrue = (currentInput[passSrc] == rule->charsdots[2]) ? 1 : 0;
+	  else
+	    itsTrue = (currentInput[passSrc] == rule->charsdots[3]) ? 1 : 0;
+	  passIC += 3;
+	  break;
 	case pass_swap:
 	  itsTrue = for_swapTest ();
 	  passIC += 5;
@@ -2344,6 +2410,8 @@ static int
 for_passDoAction (void)
 {
   int k;
+  TranslationTableOffset ruleOffset;
+  TranslationTableRule *rule;
   if ((dest + startReplace - startMatch) > destmax)
     return 0;
   for (k = startMatch; k < startReplace; k++)
@@ -2381,16 +2449,28 @@ for_passDoAction (void)
 	passVariables[passInstructions[passIC + 1]]++;
 	passIC += 2;
 	break;
-case pass_groupstart:
-break;
-case pass_groupend:
-break;
+      case pass_groupstart:
+	ruleOffset = (passInstructions[passIC + 1] << 16) |
+	  passInstructions[passIC + 2];
+	rule = (TranslationTableRule *) & table->ruleArea[ruleOffset];
+	currentOutput[dest++] = rule->charsdots[2];
+	passIC += 3;
+	break;
+      case pass_groupend:
+	ruleOffset = (passInstructions[passIC + 1] << 16) |
+	  passInstructions[passIC + 2];
+	rule = (TranslationTableRule *) & table->ruleArea[ruleOffset];
+	currentOutput[dest++] = rule->charsdots[3];
+	passIC += 3;
+	break;
       case pass_swap:
 	if (!for_swapReplace (startReplace, endReplace))
 	  return 0;
 	passIC += 3;
 	break;
       case pass_omit:
+	if (bracketRule)
+	  doBrackets ();
 	passIC++;
 	break;
       case pass_copy:
@@ -2546,8 +2626,7 @@ lou_hyphenate (const char *trantab, const widechar
   int wordStart;
   int wordEnd;
   table = lou_getTable (trantab);
-  if (table == NULL || table->hyphenStatesArray == 0 || inlen >= 
-HYPHSTRING)
+  if (table == NULL || table->hyphenStatesArray == 0 || inlen >= HYPHSTRING)
     return 0;
   if (mode != 0)
     {
@@ -2580,8 +2659,8 @@ HYPHSTRING)
 	return 0;
     }
   if (!hyphenate
-      (&workingBuffer[wordStart], wordEnd - wordStart + 1, 
-&hyphens[wordStart]))
+      (&workingBuffer[wordStart], wordEnd - wordStart + 1,
+       &hyphens[wordStart]))
     return 0;
   for (k = 0; k <= wordStart; k++)
     hyphens[k] = '0';
