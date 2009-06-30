@@ -99,6 +99,7 @@ extern "C"
     pass_endGroup = '}',
     pass_variable = '#',
     pass_not = '!',
+    pass_search = '/',
     pass_any = 'a',
     pass_digit = 'd',
     pass_litDigit = 'D',

@@ -370,7 +370,8 @@ showString (widechar const *chars, int length)
 	  char hexbuf[20];
 	  int hexLength;
 	  char escapeLetter;
-	  int leadingZeros;
+	  
+int leadingZeros;
 	  int hexPos;
 	  hexLength = sprintf (hexbuf, "%x", chars[charPos]);
 	  switch (hexLength)
@@ -1215,7 +1216,8 @@ static int
     return 0;
 
   /*link new rule into table. */
-  if (opcode == CTO_SwapCd || opcode == CTO_SwapDd)
+  if (opcode == CTO_SwapCc || opcode == CTO_SwapCd || opcode == 
+CTO_SwapDd)
     return 1;
   if (opcode >= CTO_Context && opcode <= CTO_Pass4 && newRule->charslen == 0)
     return addPassRule (nested);
@@ -2039,6 +2041,10 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 	passInstructions[passIC++] = pass_not;
 	k++;
 	break;
+      case pass_search:
+	passInstructions[passIC++] = pass_search;
+	k++;
+	break;
       case pass_string:
 	if (opcode != CTO_Context && opcode != CTO_Correct)
 	  {
@@ -2314,9 +2320,20 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 	case pass_string:
 	case pass_dots:
 	case pass_attributes:
+	case pass_swap:
+	  start = 1;
+	  break;
 	case pass_groupstart:
 	case pass_groupend:
-	case pass_swap:
+	  if ((passIC == 0
+	       || passInstructions[passIC - 1] == pass_startReplace)
+	      && (passInstructions[passIC + 3] != pass_endReplace
+		  || passInstructions[passIC + 3] != pass_endTest))
+	    {
+	      compileError (nested,
+			    "grouping symbols must stand alone between replacement markers");
+	      return 0;
+	    }
 	  start = 1;
 	  break;
 	case pass_eq:
@@ -2351,6 +2368,8 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
       ruleChars.length = k;
       break;
     case pass_attributes:
+    case pass_groupstart:
+    case pass_groupend:
     case pass_swap:
       after = passInstructions[passIC + 1];
       break;
@@ -3550,9 +3569,9 @@ compileFile (const char *fileName)
   nested.lineNumber = 0;
   if ((nested.in = fopen (completePath, "r")))
     {
-	  while (getALine (&nested))
-	    compileRule (&nested);
-	  fclose (nested.in);
+      while (getALine (&nested))
+	compileRule (&nested);
+      fclose (nested.in);
     }
   else
     {

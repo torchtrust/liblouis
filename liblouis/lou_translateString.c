@@ -2103,17 +2103,17 @@ matchcurrentInput (void)
 }
 
 static int
-for_swapTest (void)
+for_swapTest (int swapIC, int *callSrc)
 {
   int curLen;
   int curTest;
-  int curSrc = passSrc;
+  int curSrc = *callSrc;
   TranslationTableOffset swapRuleOffset;
   TranslationTableRule *swapRule;
   swapRuleOffset =
-    (passInstructions[passIC + 1] << 16) | passInstructions[passIC + 2];
+    (passInstructions[swapIC + 1] << 16) | passInstructions[swapIC + 2];
   swapRule = (TranslationTableRule *) & table->ruleArea[swapRuleOffset];
-  for (curLen = 0; curLen < passInstructions[passIC + 3]; curLen++)
+  for (curLen = 0; curLen < passInstructions[swapIC + 3]; curLen++)
     {
       if (swapRule->opcode == CTO_SwapDd)
 	{
@@ -2135,12 +2135,12 @@ for_swapTest (void)
 	return 0;
       curSrc++;
     }
-  if (passInstructions[passIC + 3] == passInstructions[passIC + 4])
+  if (passInstructions[swapIC + 3] == passInstructions[swapIC + 4])
     {
-      passSrc = curSrc;
+      *callSrc = curSrc;
       return 1;
     }
-  while (curLen < passInstructions[passIC + 4])
+  while (curLen < passInstructions[swapIC + 4])
     {
       if (swapRule->opcode == CTO_SwapDd)
 	{
@@ -2160,13 +2160,13 @@ for_swapTest (void)
 	}
       if (curTest >= swapRule->charslen)
 	{
-	  passSrc = curSrc;
+	  *callSrc = curSrc;
 	  return 1;
 	}
       curSrc++;
       curLen++;
     }
-  passSrc = curSrc;
+  *callSrc = curSrc;
   return 1;
 }
 
@@ -2223,7 +2223,7 @@ doBrackets (void)
 {
   widechar startDots = bracketRule->charsdots[2];
   widechar endDots = bracketRule->charsdots[3];
-  widechar *curin  = currentInput;
+  widechar *curin = (widechar *) currentInput;
   int curPos;
   int level = 0;
   if (bracketOp == pass_groupstart)
@@ -2246,7 +2246,7 @@ doBrackets (void)
     }
   else
     {
-      for (curPos = dest - 1; curPos >= 0; curPos++)
+      for (curPos = dest - 1; curPos >= 0; curPos--)
 	{
 	  if (currentOutput[curPos] == endDots)
 	    level--;
@@ -2258,11 +2258,164 @@ doBrackets (void)
       if (curPos < 0)
 	return 0;
       curPos++;
-      for (; curPos > dest; curPos++)
+      for (; curPos < dest; curPos++)
 	currentOutput[curPos - 1] = currentOutput[curPos];
       dest--;
     }
   return 1;
+}
+
+static int
+doPassSearch (void)
+{
+  int level = 0;
+  int k, kk;
+  int m;
+  int not = 0;
+  TranslationTableOffset ruleOffset;
+  TranslationTableRule *rule;
+  TranslationTableCharacterAttributes attributes;
+  int searchSrc = passSrc;
+  int searchIC;
+  if (transOpcode == CTO_Context || transOpcode == CTO_Correct)
+    m = 0;
+  else
+    m = 1;
+  while (searchSrc < srcmax)
+    {
+      searchIC = passIC + 1;
+      while (searchIC < transRule->dotslen)
+	{
+	  int itsTrue = 1;
+	  int startOrEnd = 0;
+	  if (searchSrc > srcmax)
+	    return 0;
+	  switch (passInstructions[searchIC])
+	    {
+	    case pass_lookback:
+	      searchSrc -= passInstructions[searchIC + 1];
+	      if (searchSrc < 0)
+		searchSrc = 0;
+	      searchIC += 2;
+	      break;
+	    case pass_not:
+	      not = 1;
+	      searchIC++;
+	      continue;
+	    case pass_string:
+	    case pass_dots:
+	      kk = searchSrc;
+	      for (k = searchIC + 2;
+		   k < searchIC + 2 + passInstructions[searchIC + 1]; k++)
+		if (passInstructions[k] != currentInput[kk++])
+		  {
+		    itsTrue = 0;
+		    break;
+		  }
+	      searchSrc += passInstructions[searchIC + 1];
+	      searchIC += passInstructions[searchIC + 1] + 2;
+	      break;
+	    case pass_startReplace:
+	      searchIC++;
+	      break;
+	    case pass_endReplace:
+	      searchIC++;
+	      break;
+	    case pass_attributes:
+	      attributes =
+		(passInstructions[searchIC + 1] << 16) |
+		passInstructions[searchIC + 2];
+	      for (k = 0; k < passInstructions[searchIC + 3]; k++)
+		itsTrue =
+		  (((for_findCharOrDots (currentInput[searchSrc++], m)->
+		     attributes & attributes)) ? 1 : 0);
+	      if (itsTrue)
+		for (k = passInstructions[searchIC + 3]; k <
+		     passInstructions[searchIC + 4]; k++)
+		  {
+		    if (!
+			(for_findCharOrDots (currentInput[searchSrc], 1)->
+			 attributes & attributes))
+		      break;
+		    searchSrc++;
+		  }
+	      searchIC += 5;
+	      break;
+	    case pass_groupstart:
+	    case pass_groupend:
+	      ruleOffset = (passInstructions[searchIC + 1] << 16) |
+		passInstructions[searchIC + 2];
+	      rule = (TranslationTableRule *) & table->ruleArea[ruleOffset];
+	      if (passInstructions[searchIC] == pass_groupstart)
+		itsTrue =
+		  (currentInput[searchSrc] == rule->charsdots[2]) ? 1 : 0;
+	      else
+		itsTrue =
+		  (currentInput[searchSrc] == rule->charsdots[3]) ? 1 : 0;
+	      if (bracketRule != NULL && bracketOp == pass_groupstart
+		  && rule == bracketRule)
+		{
+		  if (currentInput[searchSrc] == rule->charsdots[2])
+		    startOrEnd = -1;
+		  else if (currentInput[searchSrc] == rule->charsdots[3])
+		    startOrEnd = 1;
+		}
+	      searchSrc++;
+	      searchIC += 3;
+	      break;
+	    case pass_swap:
+	      itsTrue = for_swapTest (searchIC, &searchSrc);
+	      searchIC += 5;
+	      break;
+	    case pass_eq:
+	      if (passVariables[passInstructions[searchIC + 1]] !=
+		  passInstructions[searchIC + 2])
+		itsTrue = 0;
+	      searchIC += 3;
+	      break;
+	    case pass_lt:
+	      if (passVariables[passInstructions[searchIC + 1]] >=
+		  passInstructions[searchIC + 2])
+		itsTrue = 0;
+	      searchIC += 3;
+	      break;
+	    case pass_gt:
+	      if (passVariables[passInstructions[searchIC + 1]] <=
+		  passInstructions[searchIC + 2])
+		itsTrue = 0;
+	      searchIC += 3;
+	      break;
+	    case pass_lteq:
+	      if (passVariables[passInstructions[searchIC + 1]] >
+		  passInstructions[searchIC + 2])
+		itsTrue = 0;
+	      searchIC += 3;
+	      break;
+	    case pass_gteq:
+	      if (passVariables[passInstructions[searchIC + 1]] <
+		  passInstructions[searchIC + 2])
+		itsTrue = 0;
+	      searchIC += 3;
+	      break;
+	    case pass_endTest:
+	      if (itsTrue)
+		{
+		  level += startOrEnd;
+		  if ((bracketRule && level == 1) || !bracketRule)
+		    return 1;
+		}
+	      searchIC = transRule->dotslen;
+	      break;
+	    default:
+	      break;
+	    }
+	  if ((!not && !itsTrue) || (not && itsTrue))
+	    break;
+	  not = 0;
+	}
+      searchSrc++;
+    }
+  return 0;
 }
 
 static int
@@ -2301,6 +2454,10 @@ for_passDoTest (void)
 	  not = 1;
 	  passIC++;
 	  continue;
+	case pass_search:
+	  itsTrue = doPassSearch ();
+	  passIC++;
+	  break;
 	case pass_string:
 	case pass_dots:
 	  itsTrue = matchcurrentInput ();
@@ -2350,10 +2507,11 @@ for_passDoTest (void)
 	    itsTrue = (currentInput[passSrc] == rule->charsdots[2]) ? 1 : 0;
 	  else
 	    itsTrue = (currentInput[passSrc] == rule->charsdots[3]) ? 1 : 0;
+	  passSrc++;
 	  passIC += 3;
 	  break;
 	case pass_swap:
-	  itsTrue = for_swapTest ();
+	  itsTrue = for_swapTest (passIC, &passSrc);
 	  passIC += 5;
 	  break;
 	case pass_eq:
