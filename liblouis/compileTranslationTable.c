@@ -2325,10 +2325,10 @@ compilePassOpcode (FileInfo * nested, TranslationTableOpcode opcode)
 	  break;
 	case pass_groupstart:
 	case pass_groupend:
-	  if ((passIC == 0
+	  if (!((passIC == 0
 	       || passInstructions[passIC - 1] == pass_startReplace)
-	      && (passInstructions[passIC + 3] != pass_endReplace
-		  || passInstructions[passIC + 3] != pass_endTest))
+	      && (passInstructions[passIC + 3] == pass_endReplace
+		  || passInstructions[passIC + 3] == pass_endTest)))
 	    {
 	      compileError (nested,
 			    "grouping symbols must stand alone between replacement markers");
@@ -2421,6 +2421,8 @@ compileGrouping (FileInfo * nested)
   CharsString groupDots;
   CharsString dotsParsed;
   TranslationTableCharacter *charsDotsPtr;
+  widechar endChar;
+  widechar endDots;
   if (!getToken (nested, &name, "name operand"))
     return 0;
   if (!getRuleCharsText (nested, &groupChars))
@@ -2465,6 +2467,15 @@ compileGrouping (FileInfo * nested)
     return 0;
   putCharAndDots (nested, groupChars.chars[0], dotsParsed.chars[0]);
   putCharAndDots (nested, groupChars.chars[1], dotsParsed.chars[1]);
+  endChar = groupChars.chars[1];
+  endDots = dotsParsed.chars[1];
+  groupChars.length = dotsParsed.length = 1;
+  if (!addRule (nested, CTO_Math, &groupChars, &dotsParsed, 0, 0))
+    return 0;
+  groupChars.chars[0] = endChar;
+  dotsParsed.chars[0] = endDots;
+  if (!addRule (nested, CTO_Math, &groupChars, &dotsParsed, 0, 0))
+    return 0;
   return 1;
 }
 
@@ -3796,6 +3807,8 @@ lou_getTable (const char *tableList)
   char *ch;
   char pathEnd[2];
   char trialPath[MAXSTRING];
+  if (tableList[0] == 0)
+    return NULL;
   pathEnd[0] = DIR_SEP;
   pathEnd[1] = 0;
   /* See if table is on environment path LOUIS_TABLEPATH */
