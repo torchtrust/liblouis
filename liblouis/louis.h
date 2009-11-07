@@ -280,8 +280,6 @@ extern "C"
     CTO_CapitalRule,
     CTO_BeginCapitalRule,
     CTO_EndCapitalRule,
-    CTO_FirstWordCapsRule,
-    CTO_LastWordCapsAfterRule,
     CTO_LetterRule,
     CTO_NumberRule,
     CTO_FirstWordItalRule,
@@ -305,6 +303,13 @@ extern "C"
     CTO_LastLetterUnderRule,
     CTO_SingleLetterUnderRule,
     CTO_UnderWordRule,
+    CTO_FirstWordCapRule,
+    CTO_LastWordCapBeforeRule,
+    CTO_LastWordCapAfterRule,
+    CTO_FirstLetterCapRule,
+    CTO_LastLetterCapRule,
+    CTO_SingleLetterCapRule,
+    CTO_CapWordRule,
     CTO_BegCompRule,
     CTO_CompBegEmph1Rule,
     CTO_CompEndEmph1Rule,
@@ -366,14 +371,11 @@ extern "C"
     TranslationTableOffset noBreak;
     TranslationTableOffset capitalSign;	/*capitalization sign */
     TranslationTableOffset beginCapitalSign;	/*begin capitals sign */
-    TranslationTableOffset lenBeginCaps;
     TranslationTableOffset endCapitalSign;	/*end capitals sign */
-    TranslationTableOffset firstWordCaps;
-    TranslationTableOffset lastWordCapsAfter;
-    TranslationTableOffset lenCapsPhrase;
     TranslationTableOffset letterSign;
     TranslationTableOffset numberSign;	/*number sign */
-    /*Do not change the order of the following emphasis opcodes */
+
+    /* Do not change the order of the following emphasis opcodes */
     TranslationTableOffset firstWordItal;
     TranslationTableOffset lastWordItalBefore;
     TranslationTableOffset lastWordItalAfter;
@@ -398,6 +400,15 @@ extern "C"
     TranslationTableOffset singleLetterUnder;
     TranslationTableOffset underWord;
     TranslationTableOffset lenUnderPhrase;
+    TranslationTableOffset firstWordCap;
+    TranslationTableOffset lastWordCapBefore;
+    TranslationTableOffset lastWordCapAfter;
+    TranslationTableOffset firstLetterCap;
+    TranslationTableOffset lastLetterCap;
+    TranslationTableOffset singleLetterCap;
+    TranslationTableOffset CapWord;
+    TranslationTableOffset lenCapPhrase;
+
     TranslationTableOffset begComp;
     TranslationTableOffset compBegEmph1;
     TranslationTableOffset compEndEmph1;

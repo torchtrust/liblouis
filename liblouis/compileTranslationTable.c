@@ -2959,17 +2959,17 @@ doOpcode:
     case CTO_FirstWordCaps:
       ok = compileBrailleIndicator (nested,
 				    "first word capital sign",
-				    CTO_FirstWordCapsRule,
+				    CTO_FirstWordCapRule,
 				    &table->firstWordCaps);
       break;
-    case CTO_LastWordCapsAfter:
+    case CTO_LastWordCapAfter:
       ok = compileBrailleIndicator (nested,
 				    "capital sign after last word",
 				    CTO_LastWordCapsAfterRule,
-				    &table->lastWordCapsAfter);
+				    &table->lastWordCapAfter);
       break;
     case CTO_LenCapsPhrase:
-      ok = table->lenCapsPhrase = compileNumber (nested);
+      ok = table->lenCasPhrase = compileNumber (nested);
       break;
     case CTO_LetterSign:
       ok = compileBrailleIndicator (nested,
