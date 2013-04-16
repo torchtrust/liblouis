@@ -18,5 +18,4 @@ liblouis_la_SOURCES = \
 	louis.h	\
 	liblouis.h \
 	lou_translateString.c \
-	transcommon.ci \
 	wrappers.c

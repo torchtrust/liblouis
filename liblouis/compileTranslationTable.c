@@ -130,8 +130,7 @@ lou_getProgramPath ()
 void
 outOfMemory ()
 {
-  fprintf (stderr,
-	   "liblouis: Insufficient memory\n");
+  fprintf (stderr, "liblouis: Insufficient memory\n");
   exit (3);
 }
 
@@ -256,6 +255,7 @@ static struct CharacterClass *characterClasses;
 static TranslationTableCharacterAttributes characterClassAttribute;
 
 static const char *opcodeNames[CTO_None] = {
+  "hashlengths",
   "include",
   "locale",
   "undefined",
@@ -780,13 +780,61 @@ allocateHeader (FileInfo * nested)
   return 1;
 }
 
+static TranslationTableCharacter *compile_findCharOrDots (widechar c, int m);
+
+/**
+ * This function generates hash codes for sequences of widechar of 
+ * variable length. The maximum length, MAXHASH, is defined in louis.h. 
+ * It should not be greater than 9.
+ * Parameters:
+ * c, a pointer to a sequence of widechar. If c is not NULL the number 
+ * of characters specified by length is stored in an internal buffer for 
+ * optimization;
+ * length, the number of members of this sequence to be considered.
+ * *lengthUsed, a pointer to an int which will receive the actual length 
+ * used by the function.
+ * mode, control;
+ * if mode is 0 look for character rules;
+ * If mode is 1 look for dot pattern rules;
+ */
 int
-stringHash (const widechar * c)
+compile_stringHash (const widechar * c, int length, int *lengthUsed, int mode)
 {
-/*hash function for strings */
-  unsigned long int makeHash = (((unsigned long int) c[0] << 8) +
-				(unsigned long int) c[1]) % HASHNUM;
-  return (int) makeHash;
+  unsigned long hash = 0;
+  static int lengthx;
+  static widechar saved[MAXHASH];
+  int k;
+  if (table->forwardHashLength == 0 || table->backHashLength == 0)
+    {
+      table->forwardHashLength = 5;
+      table->backHashLength = 3;
+    }
+  if (c != NULL)
+    {
+      lengthx = length;
+      if (mode == 0)
+	{
+	  if (lengthx > table->forwardHashLength)
+	    lengthx = table->forwardHashLength;
+	}
+      else
+	{
+	  if (lengthx > table->backHashLength)
+	    lengthx = table->backHashLength;
+	}
+      if (lengthx > 1)
+	for (k = 0; k < lengthx; k++)
+	  saved[k] = c[k];
+    }
+  else
+    lengthx--;
+  if (lengthUsed != NULL)
+    *lengthUsed = lengthx;
+  if (lengthx < 2)
+    return -1;
+  for (k = 0; k < lengthx; k++)
+    hash = (hash << 7) + (unsigned long) saved[k];
+  return (int) (hash % HASHNUM);
 }
 
 int
@@ -1115,7 +1163,8 @@ add_0_multiple ()
 /*direction = 0 newRule->charslen > 1*/
   TranslationTableRule *currentRule = NULL;
   TranslationTableOffset *currentOffsetPtr =
-    &table->forRules[stringHash (&newRule->charsdots[0])];
+    &table->forRules[compile_stringHash (&newRule->charsdots[0],
+				 newRule->charslen, NULL, 0)];
   while (*currentOffsetPtr)
     {
       currentRule = (TranslationTableRule *)
@@ -1139,13 +1188,6 @@ add_1_single (FileInfo * nested)
   TranslationTableRule *currentRule;
   TranslationTableOffset *currentOffsetPtr;
   TranslationTableCharacter *dots;
-  if (newRule->opcode == CTO_NoBreak || newRule->opcode == CTO_SwapCc ||
-      (newRule->opcode >= CTO_Context
-       &&
-       newRule->opcode <= CTO_Pass4)
-      || newRule->opcode == CTO_Repeated || (newRule->opcode == CTO_Always
-					     && newRule->charslen == 1))
-    return;			/*too ambiguous */
   dots = definedCharOrDots (nested, newRule->charsdots[newRule->charslen], 1);
   if (newRule->opcode >= CTO_Space && newRule->opcode < CTO_UpLow)
     dots->definitionRule = newRuleOffset;
@@ -1171,13 +1213,16 @@ add_1_multiple ()
 {
 /*direction = 1, newRule->dotslen > 1*/
   TranslationTableRule *currentRule = NULL;
-  TranslationTableOffset *currentOffsetPtr = &table->backRules[stringHash
+  TranslationTableOffset *currentOffsetPtr = &table->backRules[compile_stringHash
 							       (&newRule->
 								charsdots
 								[newRule->
-								 charslen])];
-  if (newRule->opcode == CTO_NoBreak || newRule->opcode == CTO_SwapCc ||
-      (newRule->opcode >= CTO_Context && newRule->opcode <= CTO_Pass4))
+								 charslen],
+								newRule->
+								dotslen, NULL,
+								1)];
+  if (newRule->opcode == CTO_NoBreak || newRule->opcode == CTO_SwapCc
+      || (newRule->opcode >= CTO_Context && newRule->opcode <= CTO_Pass4))
     return;
   while (*currentOffsetPtr)
     {
@@ -1280,6 +1325,13 @@ static int
   /*link new rule into table. */
   if (opcode == CTO_SwapCc || opcode == CTO_SwapCd || opcode == CTO_SwapDd)
     return 1;
+  if (newRule->opcode == CTO_NoBreak || newRule->opcode == CTO_SwapCc ||
+      (newRule->opcode >= CTO_Context
+       &&
+       newRule->opcode <= CTO_Pass4)
+      || newRule->opcode == CTO_Repeated || (newRule->opcode == CTO_Always
+					     && newRule->charslen == 1))
+    noback = 1;			/*too ambiguous */
   if (opcode >= CTO_Context && opcode <= CTO_Pass4 && newRule->charslen == 0)
     return addPassRule (nested);
   if (newRule->charslen == 0 || nofor)
@@ -3503,7 +3555,7 @@ typedef struct
 
 /* a hash function from ASU - adapted from Gtk+ */
 static unsigned int
-hyphenStringHash (const CharsString * s)
+hyphencompile_stringHash (const CharsString * s)
 {
   int k;
   unsigned int h = 0, g;
@@ -3550,7 +3602,7 @@ hyphenHashInsert (HyphenHashTab * hashTab, const CharsString * key, int val)
 {
   int i, j;
   HyphenHashEntry *e;
-  i = hyphenStringHash (key) % HYPHENHASHSIZE;
+  i = hyphencompile_stringHash (key) % HYPHENHASHSIZE;
   if (!(e = malloc (sizeof (HyphenHashEntry))))
     outOfMemory ();
   e->next = hashTab->entries[i];
@@ -3572,7 +3624,7 @@ hyphenHashLookup (HyphenHashTab * hashTab, const CharsString * key)
   HyphenHashEntry *e;
   if (key->length == 0)
     return 0;
-  i = hyphenStringHash (key) % HYPHENHASHSIZE;
+  i = hyphencompile_stringHash (key) % HYPHENHASHSIZE;
   for (e = hashTab->entries[i]; e; e = e->next)
     {
       if (key->length != e->key->length)
@@ -3888,6 +3940,23 @@ doOpcode:
   switch (opcode)
     {				/*Carry out operations */
     case CTO_None:
+      break;
+    case CTO_HashLengths:
+    {
+    int maxHash = MAXHASH;
+      getToken (nested, &scratchPad, "forward hash length");
+      table->forwardHashLength = scratchPad.chars[0] - 48;
+      getToken (nested, &scratchPad, "back-translation hash length");
+      table->backHashLength = scratchPad.chars[0] - 48;
+      if (!((table->forwardHashLength >= 2 && table->forwardHashLength 
+      <= 
+      maxHash) || (table->backHashLength >= 2 && table->backHashLength 
+      <= maxHash)))
+      compileError (nested,
+        "forward and backward hash lengths must be between 2 and %s\n",
+      maxHash);
+        ok = 0;
+      }
       break;
     case CTO_IncludeFile:
       {
@@ -4647,7 +4716,7 @@ makeDoubleRule (TranslationTableOpcode opcode, TranslationTableOffset
 }
 
 static int
-setDefaults ()
+finishTable ()
 {
   if (!table->lenBeginCaps)
     table->lenBeginCaps = 2;
@@ -4668,70 +4737,10 @@ setDefaults ()
   return 1;
 }
 
-static char *
-doLang2table (const char *tableList)
-{
-  static char newList[MAXSTRING];
-  int k;
-  char buffer[MAXSTRING];
-  FILE *l2t;
-  char *langCode;
-  int langCodeLen;
-  if (tableList == NULL || *tableList == 0)
-    return NULL;
-  strcpy (newList, tableList);
-  for (k = strlen (newList) - 1; k >= 0 && newList[k] != '='; k--);
-  if (newList[k] != '=')
-    return newList;
-  fileCount = 1;
-  errorCount = 1;
-  newList[k] = 0;
-  strcpy (buffer, newList);
-  langCode = &newList[k + 1];
-  langCodeLen = strlen (langCode);
-  strcat (buffer, "lang2table");
-  l2t = fopen (buffer, "r");
-  if (l2t == NULL)
-    return NULL;
-  while ((fgets (buffer, sizeof (buffer) - 2, l2t)))
-    {
-      char *codeInFile;
-      int codeInFileLen;
-      char *tableInFile;
-      for (k = 0; buffer[k] < 32; k++);
-      if (buffer[k] == '#' || buffer[k] < 32)
-	continue;
-      codeInFile = &buffer[k];
-      codeInFileLen = k;
-      while (buffer[k] > 32)
-	k++;
-      codeInFileLen = k - codeInFileLen;
-      codeInFile[codeInFileLen] = 0;
-      if (!
-	  (codeInFileLen == langCodeLen
-	   && strcasecmp (langCode, codeInFile) == 0))
-	continue;
-      while (buffer[k] < 32)
-	k++;
-      tableInFile = &buffer[k];
-      while (buffer[k] > 32)
-	k++;
-      buffer[k] = 0;
-      strcat (newList, tableInFile);
-      fclose (l2t);
-      fileCount = 0;
-      errorCount = 0;
-      return newList;
-    }
-  fclose (l2t);
-  return NULL;
-}
-
 static void *
-compileTranslationTable (const char *tl)
+compileTranslationTable (const char *tableList)
 {
 /*compile source tables into a table in memory */
-  const char *tableList;
   int k;
   char mainTable[MAXSTRING];
   char subTable[MAXSTRING];
@@ -4743,7 +4752,6 @@ compileTranslationTable (const char *tl)
   table = NULL;
   characterClasses = NULL;
   ruleNames = NULL;
-  tableList = doLang2table (tl);
   if (tableList == NULL)
     return NULL;
   if (!opcodeLengths[0])
@@ -4809,7 +4817,7 @@ cleanup:
     lou_logPrint ("%d warnings issued", warningCount);
   if (!errorCount)
     {
-      setDefaults ();
+      finishTable ();
       table->tableSize = tableSize;
       table->bytesUsed = tableUsed;
     }

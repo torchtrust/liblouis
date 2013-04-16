@@ -48,7 +48,7 @@ const char version_etc_copyright[] =
 #define AUTHORS "John J. Boyer"
 
 static void
-print_help (void)
+print_help ()
 {
   printf ("\
 Usage: %s [OPTIONS] TABLE[,TABLE,...]\n", program_name);
@@ -82,7 +82,7 @@ static const TranslationTableHeader *table;
 static char inputBuffer[BUFSIZE];
 
 static int
-getInput (void)
+getInput ()
 {
   int inputLength;
   inputBuffer[0] = 0;
@@ -254,7 +254,10 @@ show_forRules (int startHash)
 	  {
 	    thisRule = (TranslationTableRule *) & table->ruleArea[nextRule];
 	    printRule (thisRule, 0);
+	    if (thisRule->charsnext != 0)
 	    printf ("=> ");
+	    else
+	    printf ("\nEnd of chain => ");
 	    getInput ();
 	    if (*inputBuffer == 'h')
 	      break;
@@ -286,7 +289,10 @@ show_backRules (int startHash)
 	  {
 	    thisRule = (TranslationTableRule *) & table->ruleArea[nextRule];
 	    printRule (thisRule, 1);
+	    if (thisRule->dotsnext != 0)
 	    printf ("=> ");
+	    else
+	    printf ("\nEnd of chain => ");
 	    getInput ();
 	    if (*inputBuffer == 'h')
 	      break;
@@ -320,7 +326,7 @@ print_phraseLength (TranslationTableOffset offset, char *opcode)
 }
 
 static int
-show_brailleIndicators (void)
+show_brailleIndicators ()
 {
   print_brailleIndicator (table->capitalSign, "capsign");
   print_brailleIndicator (table->beginCapitalSign, "begcaps");
@@ -378,7 +384,7 @@ pickYN (int a)
 }
 
 static int
-show_misc (void)
+show_misc ()
 {
   printf ("Table size: %d\n", table->tableSize);
   printf ("Bytes used: %d\n", table->bytesUsed);
@@ -498,16 +504,17 @@ part_paramLetters ()
 }
 
 static void
-particularHelp (void)
+particularHelp ()
 {
   part_paramLetters ();
 }
 
 static int
-particular (void)
+particular ()
 {
   int startHash;
   widechar parsed[BUFSIZE];
+  int parsedLength;
   part_paramLetters ();
   do
     {
@@ -521,7 +528,7 @@ particular (void)
 	  particularHelp ();
 	  break;
 	case 'c':
-	  printf ("-> ");
+	  printf ("One character -> ");
 	  getInput ();
 	  if (!extParseChars (inputBuffer, parsed))
 	    break;
@@ -534,7 +541,7 @@ particular (void)
 	  show_characters (startHash);
 	  break;
 	case 'd':
-	  printf ("-> ");
+	  printf ("One cell -> ");
 	  getInput ();
 	  if (!extParseDots (inputBuffer, parsed))
 	    break;
@@ -547,7 +554,7 @@ particular (void)
 	  show_dots (startHash);
 	  break;
 	case 'C':
-	  printf ("-> ");
+	  printf ("Character mapped to -> ");
 	  getInput ();
 	  if (!extParseChars (inputBuffer, parsed))
 	    break;
@@ -560,7 +567,7 @@ particular (void)
 	  show_charMap (startHash);
 	  break;
 	case 'D':
-	  printf ("-> ");
+	  printf ("Dots mapped to -> ");
 	  getInput ();
 	  if (!extParseDots (inputBuffer, parsed))
 	    break;
@@ -573,11 +580,13 @@ particular (void)
 	  show_dotsMap (startHash);
 	  break;
 	case 'f':
-	  printf ("-> ");
+	  printf ("Multiple characters -> ");
 	  getInput ();
-	  if (!extParseChars (inputBuffer, parsed))
+	  if (!(parsedLength = extParseChars (inputBuffer, parsed)))
 	    break;
-	  startHash = stringHash (parsed);
+	  startHash = stringHash (parsed, parsedLength, 
+	  NULL, 
+	  0);
 	  if (table->forRules[startHash] == 0)
 	    {
 	      printf ("Character string not in table.\n");
@@ -586,11 +595,13 @@ particular (void)
 	  show_forRules (startHash);
 	  break;
 	case 'b':
-	  printf ("-> ");
+	  printf ("Multiple cells -> ");
 	  getInput ();
-	  if (!extParseDots (inputBuffer, parsed))
+	  if (!(parsedLength = extParseDots (inputBuffer, parsed)))
 	    break;
-	  startHash = stringHash (parsed);
+	  startHash = stringHash (parsed, parsedLength, 
+	  NULL, 
+	  1);
 	  if (table->backRules[startHash] == 0)
 	    {
 	      printf ("Dot pattern not in table.\n");
@@ -599,7 +610,7 @@ particular (void)
 	  show_backRules (startHash);
 	  break;
 	case 'z':
-	  printf ("-> ");
+	  printf ("Computer Braille dots -> ");
 	  getInput ();
 	  if (!extParseChars (inputBuffer, parsed))
 	    break;
@@ -623,7 +634,7 @@ particular (void)
 }
 
 static void
-paramLetters (void)
+paramLetters ()
 {
   printf ("Press one of the letters in parentheses, then enter.\n");
   printf
@@ -634,13 +645,13 @@ paramLetters (void)
 }
 
 static void
-commandHelp (void)
+commandHelp ()
 {
   paramLetters ();
 }
 
 static int
-getCommands (void)
+getCommands ()
 {
   paramLetters ();
   do
@@ -735,7 +746,7 @@ main (int argc, char **argv)
       exit (EXIT_FAILURE);
     }
 
-  if (!(table = lou_getTable (argv[optind])))
+  if (!(table = setTable (argv[optind])))
     {
       lou_free ();
       exit (EXIT_FAILURE);

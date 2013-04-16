@@ -43,6 +43,7 @@ extern "C"
 #define strcasecmp _stricmp
 #endif
 
+#define MAXHASH 9
 #define NUMSWAPS 50
 #define NUMVAR 50
 #define LETSIGNSIZE 128
@@ -69,7 +70,7 @@ extern "C"
 #define B16 0X8000
 
 /*HASHNUM must be prime */
-#define HASHNUM 1123
+#define HASHNUM 2053
 
 #define MAXSTRING 512
 
@@ -187,6 +188,7 @@ extern "C"
 
   typedef enum
   {				/*Op codes */
+    CTO_HashLengths,
     CTO_IncludeFile,
     CTO_Locale,			/*Deprecated, do not use */
     CTO_Undefined,
@@ -395,6 +397,8 @@ extern "C"
     int numPasses;
     int corrections;
     int syllables;
+    int forwardHashLength;
+    int backHashLength;
     TranslationTableOffset tableSize;
     TranslationTableOffset bytesUsed;
     TranslationTableOffset noBreak;
@@ -495,7 +499,9 @@ extern "C"
 /* Checks tables for errors and compiles shem. returns a pointer to the 
 * table.  */
 
-  int stringHash (const widechar * c);
+  int stringHash (const widechar * c, int length, int *lengthUsed, int 
+  mode);
+
 /* Hash function for character strings */
 
   int charHash (widechar c);
@@ -560,7 +566,12 @@ extern "C"
   void debugHook ();
 /* Can be inserted in code to be used as a breakpoint in gdb */
 void outOfMemory ();
-/* Priknts an out-of-memory message and exits*/
+/* Prints an out-of-memory message and exits*/
+
+TranslationTableCharacter *findCharOrDots (widechar c, int m);
+const TranslationTableHeader *setTable (const char *tableList);
+int checkAttr (const widechar c, const 
+    TranslationTableCharacterAttributes a, int m);
 
 #ifdef __cplusplus
 }
