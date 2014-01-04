@@ -894,33 +894,6 @@ insertBrailleIndicators (int finish)
 		doCompEmph ();
 		curType = 0;
 		break;
-	      case italic + underline:
-		ok = beginEmphasis (&table->firstWordUnder);
-		curType -= underline;
-		break;
-	      case italic + bold:
-		ok = beginEmphasis (&table->firstWordBold);
-		curType -= bold;
-		break;
-	      case italic + computer_braille:
-		ok = 0;
-		doCompEmph ();
-		curType -= computer_braille;
-		break;
-	      case underline + bold:
-		beginEmphasis (&table->firstWordBold);
-		curType -= bold;
-		break;
-	      case underline + computer_braille:
-		ok = 0;
-		doCompEmph ();
-		curType -= computer_braille;
-		break;
-	      case bold + computer_braille:
-		ok = 0;
-		doCompEmph ();
-		curType -= computer_braille;
-		break;
 	      default:
 		ok = 0;
 		curType = 0;
