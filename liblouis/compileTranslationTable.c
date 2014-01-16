@@ -2206,7 +2206,7 @@ passGetName ()
 }
 
 static int
-passIsKeyword (const char *token)
+passHaveKeyword (const char *token)
 {
   int k;
   int length = strlen (token);
@@ -2362,79 +2362,79 @@ passGetScriptToken ()
 	    }
 	  return pass_invalidToken;
 	case 'a':
-	  if (passIsKeyword ("ttr"))
+	  if (passHaveKeyword ("ttr"))
 	    return pass_attributes;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'b':
-	  if (passIsKeyword ("ack"))
+	  if (passHaveKeyword ("ack"))
 	    return pass_lookback;
-	  if (passIsKeyword ("ool"))
+	  if (passHaveKeyword ("ool"))
 	    return pass_boolean;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'c':
-	  if (passIsKeyword ("lass"))
+	  if (passHaveKeyword ("lass"))
 	    return pass_class;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'd':
-	  if (passIsKeyword ("ef"))
+	  if (passHaveKeyword ("ef"))
 	    return pass_define;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'e':
-	  if (passIsKeyword ("mph"))
+	  if (passHaveKeyword ("mph"))
 	    return pass_emphasis;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'f':
-	  if (passIsKeyword ("ind"))
+	  if (passHaveKeyword ("ind"))
 	    return pass_search;
-	  if (passIsKeyword ("irst"))
+	  if (passHaveKeyword ("irst"))
 	    return pass_first;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'g':
-	  if (passIsKeyword ("roup"))
+	  if (passHaveKeyword ("roup"))
 	    return pass_group;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'i':
-	  if (passIsKeyword ("f"))
+	  if (passHaveKeyword ("f"))
 	    return pass_if;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'l':
-	  if (passIsKeyword ("ast"))
+	  if (passHaveKeyword ("ast"))
 	    return pass_last;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'm':
-	  if (passIsKeyword ("ark"))
+	  if (passHaveKeyword ("ark"))
 	    return pass_mark;
 	  passGetName ();
 	  return pass_nameFound;
 	case 'r':
-	  if (passIsKeyword ("epgroup"))
+	  if (passHaveKeyword ("epgroup"))
 	    return pass_repGroup;
-	  if (passIsKeyword ("epcopy"))
+	  if (passHaveKeyword ("epcopy"))
 	    return pass_copy;
-	  if (passIsKeyword ("epomit"))
+	  if (passHaveKeyword ("epomit"))
 	    return pass_omit;
-	  if (passIsKeyword ("ep"))
+	  if (passHaveKeyword ("ep"))
 	    return pass_replace;
 	  passGetName ();
 	  return pass_nameFound;
 	case 's':
-	  if (passIsKeyword ("cript"))
+	  if (passHaveKeyword ("cript"))
 	    return pass_script;
-	  if (passIsKeyword ("wap"))
+	  if (passHaveKeyword ("wap"))
 	    return pass_swap;
 	  passGetName ();
 	  return pass_nameFound;
 	case 't':
-	  if (passIsKeyword ("hen"))
+	  if (passHaveKeyword ("hen"))
 	    return pass_then;
 	  passGetName ();
 	  return pass_nameFound;

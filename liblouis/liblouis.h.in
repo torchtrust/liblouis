@@ -46,7 +46,19 @@ extern "C"
     italic = 1,
     underline = 2,
     bold = 4,
-    computer_braille = 8
+    computer_braille = 8,
+    script = 16,
+    // trd is short for transcriber-defined
+    trd1 = 1<<5,
+    trd2 = 1<<6,
+    trd3 = 1<<7,
+    trd4 = 1<<8,
+    trd5 = 1<<9,
+    trd6 = 1<<10,
+    trd7 = 1<<11,
+    trd8 = 1<<12,
+    trd9 = 1<<13,
+    trd10 = 1<<14
   } typeforms;
 #define comp_emph_1 italic
 #define comp_emph_2 underline
