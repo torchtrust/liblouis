@@ -52,6 +52,8 @@ add_plugins:
 - moderatedcomments
 - notifyemail
 - openid
+- pagecount
+- pagestats
 - pingee
 - poll
 - progress
