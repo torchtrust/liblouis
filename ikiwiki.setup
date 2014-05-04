@@ -164,7 +164,7 @@ untrusted_committers: []
 # where to pull and push changes (set to empty string to disable)
 gitorigin_branch: origin
 # branch that the wiki is stored in
-gitmaster_branch: master
+gitmaster_branch: website
 
 # gitpush plugin
 # git repository urls that changes are pushed to
