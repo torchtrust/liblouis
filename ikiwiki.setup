@@ -41,34 +41,34 @@ rcs: git
 # plugins to add to the default configuration
 add_plugins:
 - goodstuff
-- websetup
 - 404
-- recentchangesdiff
+- aggregate
 - attachment
-- remove
-- rename
+- comments
 - edittemplate
 - format
 - listdirectives
 - meta
 - moderatedcomments
+- notifyemail
 - openid
 - pingee
 - poll
 - progress
+- rawhtml
+- recentchangesdiff
 - relativedate
-- signinedit
-- testpagespec
-- version
-- theme
-- sidebar
-- comments
-- aggregate
-- template
-- notifyemail
+- remove
+- rename
 - search
 - shortcut
-- rawhtml
+- sidebar
+- signinedit
+- template
+- testpagespec
+- theme
+- version
+- websetup
 # plugins to disable
 disable_plugins: []
 # additional directory to search for template files
