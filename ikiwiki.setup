@@ -50,6 +50,7 @@ add_plugins:
 - edittemplate
 - format
 - listdirectives
+- pingee
 - poll
 - progress
 - relativedate
@@ -140,9 +141,9 @@ cookiejar:
 
 # git plugin
 # git hook to generate
-git_wrapper: /srv/ikiwiki/issues.liblouis.org/repo/hooks/post-update
+#git_wrapper: /srv/ikiwiki/issues.liblouis.org/repo/hooks/post-update
 # shell command for git_wrapper to run, in the background
-#git_wrapper_background_command: git push github
+git_wrapper_background_command: 'git push'
 # mode for git_wrapper (can safely be made suid)
 #git_wrappermode: 06755
 # git pre-receive hook to generate
