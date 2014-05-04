@@ -50,10 +50,14 @@ add_plugins:
 - edittemplate
 - format
 - listdirectives
+- meta
+- moderatedcomments
+- openid
 - pingee
 - poll
 - progress
 - relativedate
+- signinedit
 - testpagespec
 - version
 - theme
