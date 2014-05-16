@@ -13,9 +13,9 @@ wikiname: Liblouis
 adminemail: liblouis-liblouisxml@freelists.org
 # users who are wiki admins
 adminuser:
-- cegli
-- bfrees
-- mhameed
+- bert.frees
+- christian.egli
+- mesar.hameed
 # users who are banned from the wiki
 banned_users: []
 # where the source of the wiki is located
