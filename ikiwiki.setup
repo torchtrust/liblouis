@@ -53,6 +53,7 @@ add_plugins:
 - notifyemail
 - openid
 - pagecount
+- pagespec_alias
 - pagestats
 - pingee
 - poll
@@ -477,3 +478,12 @@ tag_autocreate_commit: 0
 # typography plugin
 # Text::Typography attributes value
 #typographyattributes: 3
+
+# contrib plugin pagespec_alias
+# Pagespecs should be surrounded by () 
+# to ensure logic is correct when used in more complicated specs on individual pages.
+pagespec_aliases:
+    openbugs: "((bugs/* or tagged(bugs)) and !(bugs/done or link(bugs/done) or tagged(bugs/done)))"
+    donebugs: "(tagged(bugs/done) or link(bugs/done) and !bugs)"
+    opentodo: "((todo/* or tagged(todo)) and !(todo/done or link(todo/done) or tagged(todo/done)))"
+    donetodo: "(tagged(todo/done) or link(todo/done) and !todo)"
