@@ -114,7 +114,7 @@ hardlink: 1
 # group for wrappers to run in
 #wrappergroup: ikiwiki
 # extra library and plugin directory
-libdir: /srv/ikiwiki/issues.liblouis.org/.ikiwiki
+libdir: /srv/ikiwiki/issues.liblouis.org/ctl
 # environment variables
 ENV: {}
 # time zone name
