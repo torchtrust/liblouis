@@ -19,15 +19,15 @@ adminuser:
 # users who are banned from the wiki
 banned_users: []
 # where the source of the wiki is located
-srcdir: /srv/ikiwiki/issues.liblouis.org/src/doc
+srcdir: /srv/ikiwiki/liblouis.org/src/doc
 # where to build the wiki
-destdir: /srv/ikiwiki/issues.liblouis.org/publish
+destdir: /srv/ikiwiki/liblouis.org/publish
 # base url to the wiki
-url: http://issues.liblouis.org
+url: http://liblouis.org
 # url to the ikiwiki.cgi
-cgiurl: http://issues.liblouis.org/ikiwiki.cgi
+cgiurl: http://liblouis.org/ikiwiki.cgi
 # filename of cgi wrapper to generate
-cgi_wrapper: /srv/ikiwiki/issues.liblouis.org/publish/ikiwiki.cgi
+cgi_wrapper: /srv/ikiwiki/liblouis.org/publish/ikiwiki.cgi
 # mode for cgi_wrapper (can safely be made suid)
 cgi_wrappermode: 0755
 # number of seconds to delay CGI requests when overloaded
@@ -75,7 +75,7 @@ add_plugins:
 # plugins to disable
 disable_plugins: []
 # additional directory to search for template files
-templatedir: /srv/ikiwiki/issues.liblouis.org/ctl
+templatedir: /srv/ikiwiki/liblouis.org/ctl
 # base wiki source location
 underlaydir: /usr/share/ikiwiki/basewiki
 # display verbose messages?
@@ -115,7 +115,7 @@ hardlink: 1
 # group for wrappers to run in
 #wrappergroup: ikiwiki
 # extra library and plugin directory
-libdir: /srv/ikiwiki/issues.liblouis.org/ctl
+libdir: /srv/ikiwiki/liblouis.org/ctl
 # environment variables
 ENV: {}
 # time zone name
@@ -130,7 +130,7 @@ wiki_file_chars: -[:alnum:]+/.:_
 allow_symlinks_before_srcdir: 0
 # cookie control
 cookiejar:
-  file: /srv/ikiwiki/issues.liblouis.org/.ikiwiki/cookies
+  file: /srv/ikiwiki/liblouis.org/.ikiwiki/cookies
 
 ######################################################################
 # core plugins
@@ -148,13 +148,13 @@ cookiejar:
 
 # git plugin
 # git hook to generate
-#git_wrapper: /srv/ikiwiki/issues.liblouis.org/repo/hooks/post-update
+#git_wrapper: /srv/ikiwiki/liblouis.org/repo/hooks/post-update
 # shell command for git_wrapper to run, in the background
 git_wrapper_background_command: 'git push'
 # mode for git_wrapper (can safely be made suid)
 #git_wrappermode: 06755
 # git pre-receive hook to generate
-git_test_receive_wrapper: /srv/ikiwiki/issues.liblouis.org/repo/hooks/pre-receive
+git_test_receive_wrapper: /srv/ikiwiki/liblouis.org/repo/hooks/pre-receive
 # unix users whose commits should be checked by the pre-receive hook
 untrusted_committers: []
 #- ikiwiki-anon
