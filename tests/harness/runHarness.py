@@ -197,6 +197,23 @@ class BrailleTest():
         ]
         assert hyphenated_word == self.expectedOutput, u("\n".join(report))
 
+def iterload(file):
+    buffer = ""
+    dec = json.JSONDecoder()
+    chars = 0
+    for lCount, line in enumerate(file):
+        chars += len(line)
+        buffer = buffer.strip(" \n\r\t") + line.strip(" \n\r\t")
+        while(True):
+            try:
+                r = dec.raw_decode(buffer)
+            except Exception:
+                break
+            yield r[0]
+            buffer = buffer[r[1]:].strip(" \n\r\t")
+    if buffer != "":
+        raise ValueError('reached end of file, not all data consumed.')
+
 def test_allCases():
     if 'HARNESS_DIR' in os.environ:
         # we assume that if HARNESS_DIR is set that we are invoked from
@@ -218,36 +235,35 @@ def test_allCases():
     else:
         # Process all *_harness.txt files in the harness directory.
         testfiles=iglob(os.path.join(harness_dir, '*_harness.txt'))
-    for harness in testfiles:
-        f = open(harness, 'r')
-        try:
-            harnessModule = json.load(f, encoding="UTF-8")
-        except ValueError as e:
-            raise ValueError("%s doesn't look like a harness file, %s" %(harness, e.message))
-        f.close()
-        tableList = []
-        if isinstance(harnessModule['tables'], list):
-            tableList.extend(harnessModule['tables'])
-        else:
-            tableList.append(harnessModule['tables'])
+    for testfile in testfiles:
+        with open(testfile, 'r') as fh:
+            dataIterator = iterload(fh)
 
-        origflags = {'testmode':'translate'}
-        for section in harnessModule['tests']:
-            flags = origflags.copy()
-            flags.update(section.get('flags', {}))
-            for testData in section['data']:
-                test = flags.copy()
-                testTables = tableList[:]
-                test.update(testData)
-                bt = BrailleTest(harness, testTables, **test)
-                if test['testmode'] == 'translate':
-                    yield bt.check_translate
-                    if 'cursorPos' in test:
-                        yield bt.check_cursor
-                if test['testmode'] == 'backtranslate':
-                    yield bt.check_backtranslate
-                if test['testmode'] == 'hyphenate':
-                    yield bt.check_hyphenate
+            # first should be a dictionary with a list of tables
+            block = dataIterator.next()
+            tableList = []
+            if isinstance(block['tables'], list):
+                tableList.extend(block['tables'])
+            else:
+                tableList.append(block['tables'])
+
+            # The default processing flags, which define the default type of test.
+            test = {'testmode':'translate'}
+            # Now process all remaining blocks in the json document.
+            for block in dataIterator:
+                try:
+                    test.update(block.get('flags'))
+                except:
+                    test.update(block)
+                    bt = BrailleTest(testfile, tableList, **test)
+                    if test['testmode'] == 'translate':
+                        yield bt.check_translate
+                        if 'cursorPos' in test:
+                            yield bt.check_cursor
+                    if test['testmode'] == 'backtranslate':
+                        yield bt.check_backtranslate
+                    if test['testmode'] == 'hyphenate':
+                        yield bt.check_hyphenate
 
 
 if __name__ == '__main__':
