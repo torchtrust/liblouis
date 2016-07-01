@@ -20,4 +20,8 @@ License along with liblouis. If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#define PACKAGE_VERSION "liblouis-2.6.5"
+#define PACKAGE_VERSION "liblouis-3.0.0_alpha"
+
+#define PACKAGE_NAME "(liblouis)"
+#define VERSION "3.0.0"
+#define PACKAGE_BUGREPORT "liblouis-liblouisxml@freelists.org"

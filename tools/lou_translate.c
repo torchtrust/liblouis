@@ -22,14 +22,22 @@
 
    */
 
-# include <config.h>
+#include <config.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+
+#ifndef _WIN32
 #include "liblouis.h"
 #include "louis.h"
 #include "progname.h"
+#else /* _WIN32 */
+#include "..\liblouis\louis.h"
+#include "..\windows\include\liblouis.h"
+#define program_name "lou_translate.exe"
+#endif
+
 #include "version-etc.h"
 
 #define BUFSIZE MAXSTRING - 4
@@ -125,8 +133,10 @@ main (int argc, char **argv)
 {
   int optc;
   
-  set_program_name (argv[0]);
-
+#ifndef _WIN32
+  set_program_name(argv[0]);
+#endif
+  
   while ((optc = getopt_long (argc, argv, "hvfb", longopts, NULL)) != -1)
     switch (optc)
       {
