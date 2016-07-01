@@ -26,9 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "louis.h"
 #include <getopt.h>
-#include "progname.h"
 
 #ifndef _WIN32
 #include "louis.h"
