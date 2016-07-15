@@ -1,12 +1,12 @@
 # Liblouis: Danish common rules for 6 dots grade 1 and 2
 #
-# By Bue Vester-Andersen
+#  Copyright (C) 2014, Bue Vester-Andersen <bue@vester-andersen.dk>
 #
 #  This file is part of liblouis.
 #
 #  liblouis is free software: you can redistribute it and/or modify it
 #  under the terms of the GNU Lesser General Public License as
-#  published by the Free Software Foundation, either version 3 of the
+#  published by the Free Software Foundation, either version 2.1 of the
 #  License, or (at your option) any later version.
 #
 #  liblouis is distributed in the hope that it will be useful, but
@@ -26,8 +26,7 @@
 # Version: Bue Vester-Andersen, 140511
 
 # Display upcodes
-
-include da-ansi8.dis
+include da-dk-octobraille.dis
 
 #Character definitions
 include da-chardefs6.cti

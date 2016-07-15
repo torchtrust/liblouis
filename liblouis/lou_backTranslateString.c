@@ -23,6 +23,11 @@ License along with liblouis. If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+/**
+ * @file
+ * @brief Translate from braille
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,7 +96,7 @@ backTranslateWithTracing (const char *tableList, const widechar * inbuf,
 				inlen, outbuf, outlen,
 				typeform, spacing, outputPos, inputPos,
 				cursorPos, modex);
-  table = lou_getTable (tableList);
+  table = getTable (tableList);
   if (table == NULL)
     return 0;
   srcmax = 0;
@@ -320,7 +325,7 @@ backTranslateWithTracing (const char *tableList, const widechar * inbuf,
   return goodTrans;
 }
 
-static char currentTypeform = plain_text;
+static formtype currentTypeform = plain_text;
 static int nextUpper = 0;
 static int allUpper = 0;
 static int allUpperPhrase = 0;
@@ -490,8 +495,8 @@ handleMultind ()
     return 0;
   switch (multindRule->charsdots[multindRule->charslen - doingMultind])
     {
-    case CTO_SingleLetterCapsRule: // FIXME: make sure this works
-      found = findBrailleIndicatorRule (table->emphRules[capsRule][singleLetterOffset]);
+    case CTO_CapsLetterRule: // FIXME: make sure this works
+      found = findBrailleIndicatorRule (table->emphRules[capsRule][letterOffset]);
       break;
     // NOTE:  following fixme is based on the names at the time of
     //        commit f22f91eb510cb4eef33dfb4950a297235dd2f9f1.
@@ -501,11 +506,11 @@ handleMultind ()
     //        table->beginCapitalSign and table->endCapitalSign.
     //        These are actually compiled with firstlettercaps/lastlettercaps.
     //        Which to use here?
-    case CTO_CapsWordRule:
-      found = findBrailleIndicatorRule (table->emphRules[capsRule][wordOffset]);
+    case CTO_BegCapsWordRule:
+      found = findBrailleIndicatorRule (table->emphRules[capsRule][begWordOffset]);
       break;
-    case CTO_CapsWordStopRule:
-      found = findBrailleIndicatorRule (table->emphRules[capsRule][wordStopOffset]);
+    case CTO_EndCapsWordRule:
+      found = findBrailleIndicatorRule (table->emphRules[capsRule][endWordOffset]);
       break;
     case CTO_LetterSign:
       found = findBrailleIndicatorRule (table->letterSign);
@@ -513,32 +518,32 @@ handleMultind ()
     case CTO_NumberSign:
       found = findBrailleIndicatorRule (table->numberSign);
       break;
-    case CTO_LastWordItalBeforeRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph1Rule][lastWordBeforeOffset]);
+    case CTO_EndEmph1PhraseBeforeRule:
+      found = findBrailleIndicatorRule (table->emphRules[emph1Rule][endPhraseBeforeOffset]);
       break;
-    case CTO_FirstLetterItalRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph1Rule][firstLetterOffset]);
+    case CTO_BegEmph1Rule:
+      found = findBrailleIndicatorRule (table->emphRules[emph1Rule][begOffset]);
       break;
-    case CTO_LastLetterItalRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph1Rule][lastLetterOffset]);
+    case CTO_EndEmph1Rule:
+      found = findBrailleIndicatorRule (table->emphRules[emph1Rule][endOffset]);
       break;
-    case CTO_LastWordUnderBeforeRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph2Rule][lastWordBeforeOffset]);
+    case CTO_EndEmph2PhraseBeforeRule:
+      found = findBrailleIndicatorRule (table->emphRules[emph2Rule][endPhraseBeforeOffset]);
       break;
-    case CTO_FirstLetterUnderRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph2Rule][firstLetterOffset]);
+    case CTO_BegEmph2Rule:
+      found = findBrailleIndicatorRule (table->emphRules[emph2Rule][begOffset]);
       break;
-    case CTO_LastLetterUnderRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph2Rule][lastLetterOffset]);
+    case CTO_EndEmph2Rule:
+      found = findBrailleIndicatorRule (table->emphRules[emph2Rule][endOffset]);
       break;
-    case CTO_LastWordBoldBeforeRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph3Rule][lastWordBeforeOffset]);
+    case CTO_EndEmph3PhraseBeforeRule:
+      found = findBrailleIndicatorRule (table->emphRules[emph3Rule][endPhraseBeforeOffset]);
       break;
-    case CTO_FirstLetterBoldRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph3Rule][firstLetterOffset]);
+    case CTO_BegEmph3Rule:
+      found = findBrailleIndicatorRule (table->emphRules[emph3Rule][begOffset]);
       break;
-    case CTO_LastLetterBoldRule:
-      found = findBrailleIndicatorRule (table->emphRules[emph3Rule][lastLetterOffset]);
+    case CTO_EndEmph3Rule:
+      found = findBrailleIndicatorRule (table->emphRules[emph3Rule][endOffset]);
       break;
     case CTO_BegComp:
       found = findBrailleIndicatorRule (table->begComp);
@@ -606,10 +611,10 @@ back_selectRule ()
 	  if (length < 2 || (itsANumber && (dots->attributes & CTC_LitDigit)))
 	    break;
 	  /*Hash function optimized for backward translation */
-	  makeHash = (unsigned long int) dots->lowercase << 8;
+	  makeHash = (unsigned long int) dots->realchar << 8;
 	  makeHash += (unsigned long int) (back_findCharOrDots
 					   (currentInput[src + 1],
-					    1))->lowercase;
+					    1))->realchar;
 	  makeHash %= HASHNUM;
 	  ruleOffset = table->backRules[makeHash];
 	  break;
@@ -666,17 +671,17 @@ back_selectRule ()
 		      if (itsANumber)
 			return;
 		      break;
-		    case CTO_SingleLetterCapsRule:
-		    case CTO_FirstLetterCapsRule:
-		    case CTO_LastLetterCapsRule:
-		    case CTO_CapsWordRule:
-		    case CTO_CapsWordStopRule:
-		    case CTO_FirstLetterItalRule:
-		    case CTO_LastLetterItalRule:
-		    case CTO_FirstLetterBoldRule:
-		    case CTO_LastLetterBoldRule:
-		    case CTO_FirstLetterUnderRule:
-		    case CTO_LastLetterUnderRule:
+		    case CTO_CapsLetterRule:
+		    case CTO_BegCapsRule:
+		    case CTO_EndCapsRule:
+		    case CTO_BegCapsWordRule:
+		    case CTO_EndCapsWordRule:
+		    case CTO_BegEmph1Rule:
+		    case CTO_EndEmph1Rule:
+		    case CTO_BegEmph2Rule:
+		    case CTO_EndEmph2Rule:
+		    case CTO_BegEmph3Rule:
+		    case CTO_EndEmph3Rule:
 		    case CTO_NumberRule:
 		    case CTO_BegCompRule:
 		    case CTO_EndCompRule:
@@ -787,6 +792,30 @@ back_selectRule ()
 		    currentRule->charslen > 1)
 		    break;
 		    return;
+
+				case CTO_BackMatch:
+				{
+					widechar *patterns, *pattern;
+
+					//if(dontContract || (mode & noContractions))
+					//	break;
+					//if(checkEmphasisChange(0))
+					//	break;
+
+					patterns = (widechar*)&table->ruleArea[currentRule->patterns];
+
+					/*   check before pattern   */
+					pattern = &patterns[1];
+					if(!pattern_check(currentInput, src - 1, -1, -1, pattern, table))
+						break;
+
+					/*   check after pattern   */
+					pattern = &patterns[patterns[0]];
+					if(!pattern_check(currentInput, src + currentRule->dotslen, srcmax, 1, pattern, table))
+						break;
+
+					return;
+				}
 		    default:
 		      break;
 		    }
@@ -1056,7 +1085,8 @@ failure:
 static int
 backTranslateString ()
 {
-/*Back translation */
+  /*Back translation */
+  translation_direction = 0;
   int srcword = 0;
   int destword = 0;		/* last word translated */
   nextUpper = allUpper = allUpperPhrase = itsANumber = itsALetter = itsCompbrl = 0;
@@ -1080,27 +1110,27 @@ backTranslateString ()
 	    if (!insertSpace ())
 	      goto failure;
 	  break;
-	case CTO_SingleLetterCapsRule:
+	case CTO_CapsLetterRule:
 	  nextUpper = 1;
 	  src += currentDotslen;
 	  continue;
 	  break;
-	case CTO_CapsWordRule:
+	case CTO_BegCapsWordRule:
 	  allUpper = 1;
 	  src += currentDotslen;
 	  continue;
 	  break;
-	case CTO_FirstLetterCapsRule:
+	case CTO_BegCapsRule:
 	  allUpperPhrase = 1;
 	  src += currentDotslen;
 	  continue;
 	  break;
-	case CTO_CapsWordStopRule:
+	case CTO_EndCapsWordRule:
 	  allUpper = 0;
 	  src += currentDotslen;
 	  continue;
 	  break;
-	case CTO_LastLetterCapsRule:
+	case CTO_EndCapsRule:
 	  allUpperPhrase = 0;
 	  src += currentDotslen;
 	  continue;
@@ -1116,32 +1146,24 @@ backTranslateString ()
 	  src += currentDotslen;
 	  continue;
 	  break;
-	case CTO_FirstLetterItalRule:
+	case CTO_BegEmph1Rule:
 	  currentTypeform = italic;
 	  src += currentDotslen;
 	  continue;
 	  break;
-	case CTO_LastLetterItalRule:
-	  currentTypeform = plain_text;
-	  src += currentDotslen;
-	  continue;
-	  break;
-	case CTO_FirstLetterBoldRule:
-	  currentTypeform = bold;
-	  src += currentDotslen;
-	  continue;
-	  break;
-	case CTO_LastLetterBoldRule:
-	  currentTypeform = plain_text;
-	  src += currentDotslen;
-	  continue;
-	  break;
-	case CTO_FirstLetterUnderRule:
+	case CTO_BegEmph2Rule:
 	  currentTypeform = underline;
 	  src += currentDotslen;
 	  continue;
 	  break;
-	case CTO_LastLetterUnderRule:
+	case CTO_BegEmph3Rule:
+	  currentTypeform = bold;
+	  src += currentDotslen;
+	  continue;
+	  break;
+	case CTO_EndEmph1Rule:
+	case CTO_EndEmph2Rule:
+	case CTO_EndEmph3Rule:
 	  currentTypeform = plain_text;
 	  src += currentDotslen;
 	  continue;

@@ -7,16 +7,18 @@ AM_CPPFLAGS =					\
 	-I$(top_builddir)/gnulib		\
 	-I$(top_builddir)/tools
 
-LDADD =						\
-	$(top_builddir)/liblouis/liblouis.la	\
-	$(top_builddir)/gnulib/libgnu.la	\
-	$(top_builddir)/tools/libbrlcheck.la	\
+LDADD =							\
+	$(top_builddir)/liblouis/liblouis.la		\
+	$(top_builddir)/gnulib/libgnu.la		\
+	$(top_builddir)/tools/libbrlcheck.la		\
+	$(top_builddir)/tools/gnulib/libgnutools.la	\
 	$(LTLIBINTL)
 
 backtranslate_SOURCES = backtranslate.c
 backtranslate_with_letsign_SOURCES = backtranslate_with_letsign.c
 capitalization_SOURCES = capitalization.c
 capitalized_word_SOURCES = default_table.h capitalized_word.c
+checkTable_SOURCES = checkTable.c
 emphclass_SOURCES = emphclass.c
 en_gb_g1_italics_SOURCES = en_gb_g1_italics.c
 findTable_SOURCES = findTable.c
@@ -41,6 +43,7 @@ present_progressive_SOURCES = default_table.h present_progressive.c
 resolve_table_SOURCES = resolve_table.c
 squash_space_SOURCES = squash_space.c
 typeform_SOURCES = typeform.c
+typeform_for_emphclass_SOURCES = typeform_for_emphclass.c
 uplow_with_unicode_SOURCES = uplow_with_unicode.c
 
 # Note that this is not currently included in check_programs below
@@ -72,12 +75,14 @@ program_TESTS =					\
 	outpos					\
 	getTable				\
 	typeform				\
+	typeform_for_emphclass			\
 	pass0_typebuf				\
 	hash_collision				\
 	resolve_table				\
 	logging					\
 	findTable				\
-	emphclass
+	emphclass				\
+	checkTable
 
 check_PROGRAMS = $(program_TESTS)
 
@@ -108,6 +113,13 @@ XFAIL_TESTS =					\
 # en-ueb-symbols_harness.yaml defines the desired behaviour.
 # Apparently the tables aren't quite there yet.
 XFAIL_TESTS += yaml/en-ueb-symbols_harness.yaml
+
+# FIXME: According to Bue the Danish yaml tests need to be regenerated
+# from scratch. They produce numerous failures with his new tables
+XFAIL_TESTS +=					\
+	yaml/da-dk-g26-dictionary_harness.yaml	\
+	yaml/da-dk-g28-dictionary_harness.yaml
+
 
 dist_yaml_TESTS =					\
 	yaml/ar-ar-g1_harness.yaml			\
@@ -153,7 +165,6 @@ dist_yaml_TESTS =					\
 	yaml/letterDefTest_harness.yaml			\
 	yaml/mn-MN_harness.yaml				\
 	yaml/nl-BE-g0_harness.yaml			\
-	yaml/nl-BE-g1_harness.yaml			\
 	yaml/nl-NL-g0_harness.yaml			\
 	yaml/no_harness.yaml				\
 	yaml/no_g1_harness.yaml				\

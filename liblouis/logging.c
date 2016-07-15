@@ -20,6 +20,11 @@ License along with liblouis. If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+/**
+ * @file
+ * @brief Logging
+ */
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -71,7 +76,7 @@ void logWidecharBuf(logLevels level, const char *msg, const widechar *wbuf, int 
   free(logMsg);
 }
 
-static void defaultLogCallback(int level, const char *message)
+static void defaultLogCallback(logLevels level, const char *message)
 {
   lou_logPrint("%s", message); // lou_logPrint takes formatting, protect against % in message
 }

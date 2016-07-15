@@ -20,6 +20,10 @@ License along with liblouis. If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+/**
+ * @file
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -101,7 +105,6 @@ other_translate (const char *trantab, const widechar
     default:
       return 0;
     }
-  return 0;
 }
 
 int
@@ -131,7 +134,6 @@ other_backTranslate (const char *trantab, const widechar
     default:
       return 0;
     }
-  return 0;
 }
 
 int
